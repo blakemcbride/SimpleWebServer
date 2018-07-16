@@ -26,36 +26,54 @@ import java.util.*;
  *
  */
 public class RequestThread extends Thread {
-    
+
+    private File _rootDir;
+    private Socket _socket;
+    private BufferedReader in;
+
     RequestThread(Socket socket, File rootDir) {
         _socket = socket;
         _rootDir = rootDir;
     }
     
     private static void sendHeader(BufferedOutputStream out, int code, String contentType, long contentLength, long lastModified) throws IOException {
-        out.write(("HTTP/1.0 " + code + " OK\r\n" +
+        out.write(("HTTP/1.1 " + code + " OK\r\n" +
                 "Date: " + new Date().toString() + "\r\n" +
-                "Server: JibbleWebServer/1.0\r\n" +
+                "Cache-Control: private\r\n" +
+                "Accept-Ranges: bytes\r\n" +
                 "Content-Type: " + contentType + "\r\n" +
+                "Server: JibbleWebServer/1.1\r\n" +
                 "Expires: Thu, 01 Dec 1994 16:00:00 GMT\r\n" +
                 ((contentLength != -1) ? "Content-Length: " + contentLength + "\r\n" : "") +
                 "Last-modified: " + new Date(lastModified).toString() + "\r\n" +
                 "\r\n").getBytes());
     }
-    
-    private static void sendError(BufferedOutputStream out, int code, String message) throws IOException {
+
+    private static void sendLengthHeader(BufferedOutputStream out, int code, String location) throws IOException {
+        out.write(("HTTP/1.1 " + code + " OK\r\n" +
+                "Cache-Control: private\r\n" +
+                "Location: " + location + "\r\n" +
+                "Content-Length: 0\r\n" +
+                "Server: JibbleWebServer/1.1\r\n" +
+                "Date: " + new Date().toString() + "\r\n" +
+                "Expires: Thu, 01 Dec 1994 16:00:00 GMT\r\n" +
+                "\r\n").getBytes());
+    }
+
+    private void sendError(BufferedOutputStream out, int code, String message) throws IOException {
         message = message + "<hr>" + SimpleWebServer.VERSION;
         sendHeader(out, code, "text/html", message.length(), System.currentTimeMillis());
         out.write(message.getBytes());
         out.flush();
         out.close();
+        in.close();
     }
     
     public void run() {
         InputStream reader = null;
         try {
             _socket.setSoTimeout(30000);
-            BufferedReader in = new BufferedReader(new InputStreamReader(_socket.getInputStream()));
+            in = new BufferedReader(new InputStreamReader(_socket.getInputStream()));
             BufferedOutputStream out = new BufferedOutputStream(_socket.getOutputStream());
             
             String request = in.readLine();
@@ -71,11 +89,18 @@ public class RequestThread extends Thread {
             File file = new File(_rootDir, URLDecoder.decode(path, "UTF-8")).getCanonicalFile();
             
             if (file.isDirectory()) {
+
+                if (!path.endsWith("/")) {
+                    sendLengthHeader(out, 302, path + "/");
+                    out.flush();
+                    out.close();
+                    in.close();
+                    return;
+                }
                 // Check to see if there is an index file in the directory.
                 File indexFile = new File(file, "index.html");
-                if (indexFile.exists() && !indexFile.isDirectory()) {
+                if (indexFile.exists() && !indexFile.isDirectory())
                     file = indexFile;
-                }
             }
 
             if (!file.toString().startsWith(_rootDir.toString())) {
@@ -126,6 +151,7 @@ public class RequestThread extends Thread {
             }
             out.flush();
             out.close();
+            in.close();
         }
         catch (IOException e) {
             if (reader != null) {
@@ -138,8 +164,5 @@ public class RequestThread extends Thread {
             }
         }
     }
-    
-    private File _rootDir;
-    private Socket _socket;
-    
+
 }
