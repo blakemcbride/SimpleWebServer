@@ -49,7 +49,7 @@ public class RequestThread extends Thread {
                 "\r\n").getBytes());
     }
 
-    private static void sendLengthHeader(BufferedOutputStream out, int code, String location) throws IOException {
+    private static void sendLocationHeader(BufferedOutputStream out, int code, String location) throws IOException {
         out.write(("HTTP/1.1 " + code + " OK\r\n" +
                 "Cache-Control: private\r\n" +
                 "Location: " + location + "\r\n" +
@@ -91,7 +91,7 @@ public class RequestThread extends Thread {
             if (file.isDirectory()) {
 
                 if (!path.endsWith("/")) {
-                    sendLengthHeader(out, 302, path + "/");
+                    sendLocationHeader(out, 302, path + "/");
                     out.flush();
                     out.close();
                     in.close();
