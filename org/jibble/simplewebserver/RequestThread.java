@@ -35,7 +35,7 @@ public class RequestThread extends Thread {
         _socket = socket;
         _rootDir = rootDir;
     }
-    
+
     private static void sendHeader(BufferedOutputStream out, int code, String contentType, long contentLength, long lastModified) throws IOException {
         out.write(("HTTP/1.1 " + code + " OK\r\n" +
                 "Date: " + new Date().toString() + "\r\n" +
@@ -68,28 +68,27 @@ public class RequestThread extends Thread {
         out.close();
         in.close();
     }
-    
+
     public void run() {
         InputStream reader = null;
         try {
             _socket.setSoTimeout(30000);
             in = new BufferedReader(new InputStreamReader(_socket.getInputStream()));
             BufferedOutputStream out = new BufferedOutputStream(_socket.getOutputStream());
-            
+
             String request = in.readLine();
             if (request == null || !request.startsWith("GET ") || !(request.endsWith(" HTTP/1.0") || request.endsWith("HTTP/1.1"))) {
                 // Invalid request type (no "GET")
-                sendError(out, 500, "Invalid Method.");
+                sendError(out, 500, "Invalid method.");
                 return;
-            }            
+            }
             String path = request.substring(4, request.length() - 9);
-	    int idx = path.indexOf('?');
-	    if (idx > 0)
-		    path = path.substring(0, idx);
+            int idx = path.indexOf('?');
+            if (idx > 0)
+                path = path.substring(0, idx);
             File file = new File(_rootDir, URLDecoder.decode(path, "UTF-8")).getCanonicalFile();
-            
-            if (file.isDirectory()) {
 
+            if (file.isDirectory()) {
                 if (!path.endsWith("/")) {
                     sendLocationHeader(out, 302, path + "/");
                     out.flush();
@@ -106,13 +105,11 @@ public class RequestThread extends Thread {
             if (!file.toString().startsWith(_rootDir.toString())) {
                 // Uh-oh, it looks like some lamer is trying to take a peek
                 // outside of our web root directory.
-                sendError(out, 403, "Permission Denied.");
-            }
-            else if (!file.exists()) {
+                sendError(out, 403, "Permission denied.");
+            } else if (!file.exists()) {
                 // The file was not found.
-                sendError(out, 404, "File Not Found.");
-            }
-            else if (file.isDirectory()) {
+                sendError(out, 404, "File \"" + path + "\" not found.");
+            } else if (file.isDirectory()) {
                 // print directory listing
                 if (!path.endsWith("/")) {
                     path = path + "/";
@@ -121,8 +118,8 @@ public class RequestThread extends Thread {
                 sendHeader(out, 200, "text/html", -1, System.currentTimeMillis());
                 String title = "Index of " + path;
                 out.write(("<html><head><title>" + title + "</title></head><body><h3>Index of " + path + "</h3><p>\n").getBytes());
-                for (int i = 0; i < files.length; i++) {
-                    file = files[i];
+                for (File value : files) {
+                    file = value;
                     String filename = file.getName();
                     String description = "";
                     if (file.isDirectory()) {
@@ -131,17 +128,16 @@ public class RequestThread extends Thread {
                     out.write(("<a href=\"" + path + filename + "\">" + filename + "</a> " + description + "<br>\n").getBytes());
                 }
                 out.write(("</p><hr><p>" + SimpleWebServer.VERSION + "</p></body><html>").getBytes());
-            }
-            else {
+            } else {
                 reader = new BufferedInputStream(new FileInputStream(file));
-            
+
                 String contentType = SimpleWebServer.MIME_TYPES.get(SimpleWebServer.getExtension(file));
                 if (contentType == null) {
                     contentType = "application/octet-stream";
                 }
-                
+
                 sendHeader(out, 200, contentType, file.length(), file.lastModified());
-                
+
                 byte[] buffer = new byte[4096];
                 int bytesRead;
                 while ((bytesRead = reader.read(buffer)) != -1) {
@@ -152,13 +148,11 @@ public class RequestThread extends Thread {
             out.flush();
             out.close();
             in.close();
-        }
-        catch (IOException e) {
+        } catch (IOException e) {
             if (reader != null) {
                 try {
                     reader.close();
-                }
-                catch (Exception anye) {
+                } catch (Exception anye) {
                     // Do nothing.
                 }
             }
