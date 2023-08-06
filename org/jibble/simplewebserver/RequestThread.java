@@ -42,7 +42,7 @@ public class RequestThread extends Thread {
                 "Cache-Control: private\r\n" +
                 "Accept-Ranges: bytes\r\n" +
                 "Content-Type: " + contentType + "\r\n" +
-                "Server: JibbleWebServer/1.1\r\n" +
+                "Server: SimpleWebServer/1.1\r\n" +
                 "Expires: Thu, 01 Dec 1994 16:00:00 GMT\r\n" +
                 ((contentLength != -1) ? "Content-Length: " + contentLength + "\r\n" : "") +
                 "Last-modified: " + new Date(lastModified).toString() + "\r\n" +
@@ -54,7 +54,7 @@ public class RequestThread extends Thread {
                 "Cache-Control: private\r\n" +
                 "Location: " + location + "\r\n" +
                 "Content-Length: 0\r\n" +
-                "Server: JibbleWebServer/1.1\r\n" +
+                "Server: SimpleWebServer/1.1\r\n" +
                 "Date: " + new Date().toString() + "\r\n" +
                 "Expires: Thu, 01 Dec 1994 16:00:00 GMT\r\n" +
                 "\r\n").getBytes());
@@ -79,7 +79,7 @@ public class RequestThread extends Thread {
             String request = in.readLine();
             if (request == null || !request.startsWith("GET ") || !(request.endsWith(" HTTP/1.0") || request.endsWith("HTTP/1.1"))) {
                 // Invalid request type (no "GET")
-                sendError(out, 500, "Invalid method.");
+                sendError(out, 500, "Invalid method: " + (request == null ? "" : request));
                 return;
             }
             String path = request.substring(4, request.length() - 9);
