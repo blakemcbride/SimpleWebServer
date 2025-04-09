@@ -86,6 +86,11 @@ public class RequestThread extends Thread {
             int idx = path.indexOf('?');
             if (idx > 0)
                 path = path.substring(0, idx);
+            if ("/stop-server".equals(path)) {
+                in.close();
+                _socket.close();
+                System.exit(0);
+            }
             File file = new File(_rootDir, URLDecoder.decode(path, "UTF-8")).getCanonicalFile();
 
             if (file.isDirectory()) {
