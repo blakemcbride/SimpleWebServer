@@ -1,0 +1,4 @@
+#
+javac --release 8 org/jibble/simplewebserver/*.java
+jar -c -m META-INF/MANIFEST.MF -f SimpleWebServer.jar
+

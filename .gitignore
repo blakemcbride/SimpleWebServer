@@ -1,4 +1,6 @@
 out
 *~
 .idea/workspace.xml
+SimpleWebServer.jar
+**/*.class
 
